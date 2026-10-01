@@ -71,34 +71,35 @@
                 const employee = data.find(item => item.empId === inputId);
 
                 if (!employee) {
+                    // 查無此員編（不在此 Excel 內）
                     resultContainer.innerHTML = `
-                        <div class="p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 text-center text-sm leading-relaxed">
-                            不在此 excel 內的員編代表不符合資格，請洽詢 <span class="font-bold underline">Sunny</span>。
+                        <div class="p-4 rounded-xl bg-amber-50 border border-amber-100 text-amber-800 text-center text-sm leading-relaxed">
+                            此員工編號目前未納入 EWC 福利金適用範圍，如有疑問請洽 <span class="font-bold underline">Sunny</span>。
                         </div>
                     `;
                 } else if (employee.isExternal) {
+                    // 金額為 external 的情況
                     resultContainer.innerHTML = `
                         <div class="p-4 rounded-xl bg-amber-50 border border-amber-100 text-amber-800 text-center text-sm leading-relaxed">
                             此員工編號目前未納入 EWC 福利金適用範圍，如有疑問請洽 <span class="font-bold underline">Sunny</span>。
                         </div>
                     `;
                 } else {
-                    // 完美對應狀態與撥款日期
+                    // 1. 狀態欄位判斷
                     let statusHtml = '';
-                    let payoutDisplay = '';
-
-                    // 判斷是否有真實撥款日期
-                    const hasValidPayout = employee.payoutDate && employee.payoutDate !== "審查中";
-
-                    if (hasValidPayout) {
-                        statusHtml = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">已撥款</span>`;
-                        payoutDisplay = employee.payoutDate;
-                    } else if (employee.applied) {
+                    if (employee.applied) {
                         statusHtml = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">已申請</span>`;
-                        payoutDisplay = "審查中"; // 若已申請但還沒撥款日期，撥款日期顯示審查中
                     } else {
                         statusHtml = `<span class="text-xs font-medium text-rose-600 leading-relaxed text-right">未申請，請於2026/11/30前提交，逾期不受理</span>`;
-                        payoutDisplay = "尚未撥款";
+                    }
+
+                    // 2. 撥款日期欄位判斷
+                    let payoutDisplay = "審查中";
+                    let payoutColor = "text-amber-600 font-medium";
+                    
+                    if (employee.payoutDate && employee.payoutDate !== "審查中") {
+                        payoutDisplay = employee.payoutDate;
+                        payoutColor = "text-blue-600 font-medium";
                     }
 
                     resultContainer.innerHTML = `
@@ -117,7 +118,7 @@
                             </div>
                             <div class="flex justify-between items-center text-xs text-slate-500 pt-1 border-t border-slate-100">
                                 <span>撥款日期</span>
-                                <span class="font-medium text-slate-700">${payoutDisplay}</span>
+                                <span class="${payoutColor}">${payoutDisplay}</span>
                             </div>
                             ${employee.resignDate ? `
                             <div class="flex justify-between items-center text-xs text-slate-400 pt-1">
