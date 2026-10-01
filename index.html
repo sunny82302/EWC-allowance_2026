@@ -79,16 +79,26 @@
                 } else if (employee.isExternal) {
                     resultContainer.innerHTML = `
                         <div class="p-4 rounded-xl bg-amber-50 border border-amber-100 text-amber-800 text-center text-sm leading-relaxed">
-                            此員工編號顯示為 external，代表無福利金資格，如有疑問請洽詢 <span class="font-bold underline">Sunny</span>。
+                            此員工編號目前未納入 EWC 福利金適用範圍，如有疑問請洽 <span class="font-bold underline">Sunny</span>。
                         </div>
                     `;
                 } else {
-                    // 根據「已申請」欄位判斷狀態
+                    // 完美對應狀態與撥款日期
                     let statusHtml = '';
-                    if (employee.applied) {
+                    let payoutDisplay = '';
+
+                    // 判斷是否有真實撥款日期
+                    const hasValidPayout = employee.payoutDate && employee.payoutDate !== "審查中";
+
+                    if (hasValidPayout) {
+                        statusHtml = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">已撥款</span>`;
+                        payoutDisplay = employee.payoutDate;
+                    } else if (employee.applied) {
                         statusHtml = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">已申請</span>`;
+                        payoutDisplay = "審查中"; // 若已申請但還沒撥款日期，撥款日期顯示審查中
                     } else {
                         statusHtml = `<span class="text-xs font-medium text-rose-600 leading-relaxed text-right">未申請，請於2026/11/30前提交，逾期不受理</span>`;
+                        payoutDisplay = "尚未撥款";
                     }
 
                     resultContainer.innerHTML = `
@@ -101,15 +111,14 @@
                                 <span class="text-sm text-slate-500">可申請金額</span>
                                 <span class="font-semibold text-blue-600">NT$ ${Number(employee.amount).toLocaleString()}</span>
                             </div>
-                            <div class="flex justify-between items-between gap-2">
+                            <div class="flex justify-between items-center gap-2">
                                 <span class="text-sm text-slate-500 shrink-0">目前狀態</span>
                                 ${statusHtml}
                             </div>
-                            ${employee.payoutDate && employee.payoutDate !== "審查中" ? `
                             <div class="flex justify-between items-center text-xs text-slate-500 pt-1 border-t border-slate-100">
                                 <span>撥款日期</span>
-                                <span class="font-medium text-blue-600">${employee.payoutDate}</span>
-                            </div>` : ''}
+                                <span class="font-medium text-slate-700">${payoutDisplay}</span>
+                            </div>
                             ${employee.resignDate ? `
                             <div class="flex justify-between items-center text-xs text-slate-400 pt-1">
                                 <span>離職日</span>
