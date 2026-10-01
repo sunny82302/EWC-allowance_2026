@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EWC 福利金查詢系統</title>
+    <!-- 引入 Tailwind CSS 樣式 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 border border-slate-100">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">EWC 福利金查詢</h1>
+            <p class="text-sm text-slate-500 mt-1">請輸入您的 4 位數員工編號進行查詢</p>
+        </div>
+
+        <!-- 查詢輸入表單 -->
+        <div class="space-y-4">
+            <div>
+                <label for="empIdInput" class="block text-sm font-medium text-slate-700 mb-1">員工編號</label>
+                <input type="text" id="empIdInput" maxlength="4" placeholder="例如：5062" 
+                    class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg tracking-widest text-center">
+            </div>
+            <button onclick="searchEmployee()" 
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition duration-200 shadow-md shadow-blue-100">
+                查詢資格
+            </button>
+        </div>
+
+        <!-- 載入中狀態 -->
+        <div id="loading" class="hidden text-center py-6 text-slate-400">
+            載入資料中，請稍候...
+        </div>
+
+        <!-- 查詢結果顯示區 -->
+        <div id="resultContainer" class="mt-6 hidden">
+            <!-- 結果會動態塞入這裡 -->
+        </div>
+    </div>
+
+    <script>
+        // 已串聯您的 Google Apps Script 部署網址
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJuKE0SmLilMfstnQrBSUB8ib8Ecrfi2_wuchJoAlRJMFVkEpVSY0q2WkW5Z2tx5r7mQ/exec';
+
+        // 支援按下 Enter 鍵直接查詢
+        document.getElementById('empIdInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                searchEmployee();
+            }
+        });
+
+        async function searchEmployee() {
+            const inputId = document.getElementById('empIdInput').value.trim();
+            const resultContainer = document.getElementById('resultContainer');
+            const loading = document.getElementById('loading');
+
+            if (!inputId || inputId.length !== 4) {
+                alert('請輸入正確的 4 位數員工編號！');
+                return;
+            }
+
+            resultContainer.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL);
+                const data = await response.json();
+                
+                loading.classList.add('hidden');
+
+                // 比對員工編號
+                const employee = data.find(item => item.empId === inputId);
+
+                if (!employee) {
+                    // 不在 Excel 內的情況
+                    resultContainer.innerHTML = `
+                        <div class="p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 text-center text-sm leading-relaxed">
+                            不在此 excel 內的員編代表不符合資格，請洽詢 <span class="font-bold underline">Sunny</span>。
+                        </div>
+                    `;
+                } else {
+                    // 在 Excel 內的情況
+                    const isApplied = employee.applied === '已申請';
+                    const badgeColor = isApplied ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+                    const statusText = isApplied ? '已申請福利金' : '尚未申請';
+
+                    resultContainer.innerHTML = `
+                        <div class="p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                                <span class="text-sm text-slate-500">員工編號</span>
+                                <span class="font-bold text-slate-800 text-lg">${employee.empId}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-500">可申請金額</span>
+                                <span class="font-semibold text-blue-600">NT$ ${Number(employee.amount).toLocaleString()}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-500">目前狀態</span>
+                                <span class="px-3 py-1 rounded-full text-xs font-bold ${badgeColor}">${statusText}</span>
+                            </div>
+                            ${employee.resignDate ? `
+                            <div class="flex justify-between items-center text-xs text-slate-400 pt-1">
+                                <span>離職日</span>
+                                <span>${employee.resignDate}</span>
+                            </div>` : ''}
+                        </div>
+                    `;
+                }
+                resultContainer.classList.remove('hidden');
+
+            } catch (error) {
+                loading.classList.add('hidden');
+                alert('讀取資料發生錯誤，請稍後再試或確認網路連線。');
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
