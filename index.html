@@ -20,16 +20,19 @@
                 <input type="text" id="empIdInput" maxlength="4" placeholder="例如：5062" 
                     class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg tracking-widest text-center">
             </div>
-            <button onclick="searchEmployee()" 
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition duration-200 shadow-md shadow-blue-100">
-                查詢資格
+            <button id="searchBtn" onclick="searchEmployee()" 
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition duration-200 shadow-md shadow-blue-100 flex items-center justify-center space-x-2">
+                <span>查詢資格</span>
             </button>
         </div>
 
-        <div id="loading" class="hidden text-center py-6 text-slate-400">
-            載入資料中，請稍候...
+        <!-- 質感載入動畫 (Loading Spinner) -->
+        <div id="loading" class="hidden text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+            <p class="text-sm text-slate-500 mt-2 font-medium">正在連線資料庫查詢，請稍候...</p>
         </div>
 
+        <!-- 查詢結果顯示區 -->
         <div id="resultContainer" class="mt-6 hidden">
         </div>
     </div>
@@ -47,20 +50,26 @@
             const inputId = document.getElementById('empIdInput').value.trim();
             const resultContainer = document.getElementById('resultContainer');
             const loading = document.getElementById('loading');
+            const searchBtn = document.getElementById('searchBtn');
 
             if (!inputId || inputId.length !== 4) {
                 alert('請輸入正確的 4 位數員工編號！');
                 return;
             }
 
+            // 隱藏舊結果，顯示 Loading 動畫，並鎖定按鈕避免重複點擊
             resultContainer.classList.add('hidden');
             loading.classList.remove('hidden');
+            searchBtn.disabled = true;
+            searchBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
                 const response = await fetch(APPS_SCRIPT_URL);
                 const data = await response.json();
                 
                 loading.classList.add('hidden');
+                searchBtn.disabled = false;
+                searchBtn.classList.remove('opacity-50', 'cursor-not-allowed');
 
                 const employee = data.find(item => item.empId === inputId);
 
@@ -77,7 +86,6 @@
                         </div>
                     `;
                 } else {
-                    // 判斷狀態：優先檢查是否有撥款日 -> 已撥款；次之檢查是否有申請 -> 已申請；否則 -> 尚未申請
                     let statusText = '尚未申請';
                     let badgeColor = 'bg-emerald-100 text-emerald-800';
 
@@ -111,7 +119,7 @@
                             ${employee.resignDate ? `
                             <div class="flex justify-between items-center text-xs text-slate-400 pt-1">
                                 <span>離職日</span>
-                                <span>${employee.resignDate}</span>
+                                <span class="font-medium text-slate-600">${employee.resignDate}</span>
                             </div>` : ''}
                         </div>
                     `;
@@ -120,6 +128,8 @@
 
             } catch (error) {
                 loading.classList.add('hidden');
+                searchBtn.disabled = false;
+                searchBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 alert('讀取資料發生錯誤，請稍後再試或確認網路連線。');
                 console.error(error);
             }
