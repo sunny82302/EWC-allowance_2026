@@ -26,13 +26,11 @@
             </button>
         </div>
 
-        <!-- 質感載入動畫 (Loading Spinner) -->
         <div id="loading" class="hidden text-center py-8">
             <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
             <p class="text-sm text-slate-500 mt-2 font-medium">正在連線資料庫查詢，請稍候...</p>
         </div>
 
-        <!-- 查詢結果顯示區 -->
         <div id="resultContainer" class="mt-6 hidden">
         </div>
     </div>
@@ -57,14 +55,14 @@
                 return;
             }
 
-            // 隱藏舊結果，顯示 Loading 動畫，並鎖定按鈕避免重複點擊
             resultContainer.classList.add('hidden');
             loading.classList.remove('hidden');
             searchBtn.disabled = true;
             searchBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
-                const response = await fetch(APPS_SCRIPT_URL);
+                // 加上時間戳記確保每次都抓取最新資料（避開快取延遲）
+                const response = await fetch(APPS_SCRIPT_URL + '?t=' + new Date().getTime());
                 const data = await response.json();
                 
                 loading.classList.add('hidden');
@@ -86,8 +84,9 @@
                         </div>
                     `;
                 } else {
+                    // 判斷狀態：若有撥款日期顯示「已撥款」，若有勾選已申請顯示「已申請」，否則「尚未申請」
                     let statusText = '尚未申請';
-                    let badgeColor = 'bg-emerald-100 text-emerald-800';
+                    let badgeColor = 'bg-slate-100 text-slate-700';
 
                     if (employee.payoutDate) {
                         statusText = '已撥款';
