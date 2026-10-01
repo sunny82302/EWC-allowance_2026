@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EWC 福利金查詢系統</title>
-    <!-- 引入 Tailwind CSS 樣式 -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-4">
@@ -15,7 +14,6 @@
             <p class="text-sm text-slate-500 mt-1">請輸入您的 4 位數員工編號進行查詢</p>
         </div>
 
-        <!-- 查詢輸入表單 -->
         <div class="space-y-4">
             <div>
                 <label for="empIdInput" class="block text-sm font-medium text-slate-700 mb-1">員工編號</label>
@@ -28,22 +26,17 @@
             </button>
         </div>
 
-        <!-- 載入中狀態 -->
         <div id="loading" class="hidden text-center py-6 text-slate-400">
             載入資料中，請稍候...
         </div>
 
-        <!-- 查詢結果顯示區 -->
         <div id="resultContainer" class="mt-6 hidden">
-            <!-- 結果會動態塞入這裡 -->
         </div>
     </div>
 
     <script>
-        // 已串聯您的 Google Apps Script 部署網址
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJuKE0SmLilMfstnQrBSUB8ib8Ecrfi2_wuchJoAlRJMFVkEpVSY0q2WkW5Z2tx5r7mQ/exec';
 
-        // 支援按下 Enter 鍵直接查詢
         document.getElementById('empIdInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 searchEmployee();
@@ -69,21 +62,32 @@
                 
                 loading.classList.add('hidden');
 
-                // 比對員工編號
                 const employee = data.find(item => item.empId === inputId);
 
                 if (!employee) {
-                    // 不在 Excel 內的情況
                     resultContainer.innerHTML = `
                         <div class="p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 text-center text-sm leading-relaxed">
                             不在此 excel 內的員編代表不符合資格，請洽詢 <span class="font-bold underline">Sunny</span>。
                         </div>
                     `;
+                } else if (employee.isExternal) {
+                    resultContainer.innerHTML = `
+                        <div class="p-4 rounded-xl bg-amber-50 border border-amber-100 text-amber-800 text-center text-sm leading-relaxed">
+                            此員工編號顯示為 external，代表無福利金資格，如有疑問請洽詢 <span class="font-bold underline">Sunny</span>。
+                        </div>
+                    `;
                 } else {
-                    // 在 Excel 內的情況
-                    const isApplied = employee.applied === '已申請';
-                    const badgeColor = isApplied ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
-                    const statusText = isApplied ? '已申請福利金' : '尚未申請';
+                    // 判斷狀態：優先檢查是否有撥款日 -> 已撥款；次之檢查是否有申請 -> 已申請；否則 -> 尚未申請
+                    let statusText = '尚未申請';
+                    let badgeColor = 'bg-emerald-100 text-emerald-800';
+
+                    if (employee.payoutDate) {
+                        statusText = '已撥款';
+                        badgeColor = 'bg-blue-100 text-blue-800';
+                    } else if (employee.applied) {
+                        statusText = '已申請';
+                        badgeColor = 'bg-amber-100 text-amber-800';
+                    }
 
                     resultContainer.innerHTML = `
                         <div class="p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
@@ -99,6 +103,11 @@
                                 <span class="text-sm text-slate-500">目前狀態</span>
                                 <span class="px-3 py-1 rounded-full text-xs font-bold ${badgeColor}">${statusText}</span>
                             </div>
+                            ${employee.payoutDate ? `
+                            <div class="flex justify-between items-center text-xs text-slate-400 pt-1">
+                                <span>撥款日期</span>
+                                <span class="font-medium text-blue-600">${employee.payoutDate}</span>
+                            </div>` : ''}
                             ${employee.resignDate ? `
                             <div class="flex justify-between items-center text-xs text-slate-400 pt-1">
                                 <span>離職日</span>
